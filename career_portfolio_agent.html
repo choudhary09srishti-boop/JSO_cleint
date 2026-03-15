@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Portfolio Intelligence Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- PDF.js library for parsing PDF files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f0c29;
+            --bg-mid: #302b63;
+            --bg-light: #24243e;
+            --primary: #9333ea;
+            --primary-glow: rgba(147, 51, 234, 0.5);
+            --secondary: #3b82f6;
+            --secondary-glow: rgba(59, 130, 246, 0.5);
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-mid), var(--bg-light));
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 400px 1fr;
+            }
+        }
+
+        /* Header & API Key Setup */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1rem;
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+
+        .logo-area h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-area p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .api-config {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .api-input {
+            width: 300px !important;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--primary-glow);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Input Controls (Left Column) */
+        .input-panel {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: 500;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        /* File Upload Styles */
+        .file-upload-wrapper {
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper:hover {
+            background: rgba(147, 51, 234, 0.1);
+            border-color: #c084fc;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-name {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        /* Results Panel (Right Column) */
+        .results-panel {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--secondary);
+            box-shadow: 0 0 10px var(--secondary-glow);
+        }
+
+        /* Progress Bars */
+        .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .skill-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+
+        .progress-track {
+            height: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border-radius: 5px;
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.1, 0.8, 0.2, 1);
+            position: relative;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Tags */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .tag {
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #e9d5ff;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .tag:hover {
+            background: rgba(147, 51, 234, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(147, 51, 234, 0.2);
+        }
+
+        /* Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .info-card h4 {
+            color: #bfdbfe;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+
+        .info-card-subtitle {
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 12, 41, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-radius: 16px;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        div.empty-state svg {
+            width: 80px;
+            height: 80px;
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        /* Proxy Toggle Container */
+        .proxy-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="glass">
+            <div class="logo-area">
+                <h1>AI Career Intelligence</h1>
+                <p>Portfolio & Job Trend Analysis</p>
+            </div>
+            <div class="api-config">
+                <input type="password" id="apiKey" class="api-input" placeholder="Enter Gemini API Key (AIza...)">
+                <label class="proxy-toggle">
+                    <input type="checkbox" id="useProxy" title="Check this if experiencing CORS errors" checked>
+                    Use CORS Proxy
+                </label>
+            </div>
+        </header>
+
+        <!-- Left Column: Inputs -->
+        <aside class="input-panel glass">
+            <h2 style="margin-bottom: 1rem; font-size: 1.5rem;">Your Profile</h2>
+            
+            <div class="input-group">
+                <label>Resume / CV (PDF)</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="resumeFile" accept="application/pdf" class="file-input">
+                    <div id="fileName" class="file-name">Click or drag a PDF file here</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="linkedinUrl">LinkedIn Profile URL</label>
+                <input type="text" id="linkedinUrl" placeholder="https://linkedin.com/in/username">
+            </div>
+
+            <div class="input-group">
+                <label for="githubUrl">GitHub Profile URL</label>
+                <input type="text" id="githubUrl" placeholder="https://github.com/username">
+            </div>
+
+            <button id="analyzeBtn" class="btn" style="margin-top: 1rem;">
+                Run Intelligence Analysis
+            </button>
+            
+            <div id="errorMessage" class="error-message"></div>
+        </aside>
+
+        <!-- Right Column: Results -->
+        <main class="results-panel glass" style="position: relative;">
+            
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <h3 style="color: var(--primary);">Analyzing Profile & Market Trends...</h3>
+                <p style="color: var(--text-muted);">Please wait, AI is thinking.</p>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"></path>
+                </svg>
+                <h2>No Data Analyzed Yet</h2>
+                <p>Provide your details on the left and hit 'Run Intelligence Analysis' to see your personalized career portfolio dashboard.</p>
+            </div>
+
+            <div id="resultsContainer" style="display: none; flex-direction: column; gap: 2.5rem;">
+                
+                <!-- Skill Gaps Section -->
+                <section>
+                    <h3 class="section-title">Skill Gap Analysis</h3>
+                    <div class="skill-list" id="skillList">
+                        <!-- Populated via JS -->
+                    </div>
+                </section>
+
+                <!-- Missing Keywords Section -->
+                <section>
+                    <h3 class="section-title">Missing Keywords (This Week's Trends)</h3>
+                    <div class="tags-container" id="keywordsList">
+                        <!-- Populated via JS -->
+                    </div>
+                </section>
+
+                <!-- Career Recommendations Section -->
+                <section>
+                    <h3 class="section-title">Strategic Career Recommendations</h3>
+                    <div class="cards-grid" id="recommendationsList">
+                        <!-- Populated via JS -->
+                    </div>
+                </section>
+
+                <!-- Weekly Job Updates Section -->
+                <section>
+                    <h3 class="section-title">Weekly Job Listing Targets</h3>
+                    <div class="cards-grid" id="jobsList">
+                        <!-- Populated via JS -->
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let extractedResumeText = "";
+
+        // Set up PDF.js worker
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+
+        document.getElementById('resumeFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            const fileNameDisplay = document.getElementById('fileName');
+            const errorView = document.getElementById('errorMessage');
+            
+            errorView.style.display = 'none';
+            extractedResumeText = "";
+
+            if (!file) {
+                fileNameDisplay.textContent = "Click or drag a PDF file here";
+                return;
+            }
+
+            if (file.type !== "application/pdf") {
+                fileNameDisplay.textContent = "Please select a PDF file";
+                errorView.innerText = "Error: Only PDF files are supported.";
+                errorView.style.display = 'block';
+                return;
+            }
+
+            fileNameDisplay.textContent = "Extracting text: " + file.name + "...";
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let fullText = "";
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + "\\n";
+                }
+                
+                extractedResumeText = fullText;
+                fileNameDisplay.textContent = file.name + " (Extracted successfully)";
+            } catch (err) {
+                console.error("PDF Extraction Error:", err);
+                fileNameDisplay.textContent = "Extraction failed";
+                errorView.innerText = "Error extracting text from PDF: " + err.message;
+                errorView.style.display = 'block';
+            }
+        });
+
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resumeText = extractedResumeText.trim();
+            const linkedinUrl = document.getElementById('linkedinUrl').value.trim();
+            const githubUrl = document.getElementById('githubUrl').value.trim();
+            const useProxy = document.getElementById('useProxy').checked;
+
+            const errorView = document.getElementById('errorMessage');
+            errorView.style.display = 'none';
+            errorView.innerText = '';
+
+            if (!apiKey) {
+                errorView.innerText = "Error: Please enter your Gemini API Key first.";
+                errorView.style.display = 'block';
+                return;
+            }
+
+            if (!resumeText && !linkedinUrl && !githubUrl) {
+                errorView.innerText = "Error: Please provide at least a resume text, LinkedIn URL, or GitHub URL.";
+                errorView.style.display = 'block';
+                return;
+            }
+
+            // Show Loading State
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+
+            // Construct Prompt for Gemini
+            const systemPrompt = `You are an expert Career Portfolio Intelligence Agent. Analyze the user's provided career info to identify skill gaps, provide strategic career recommendations over the next 3-6 months, suggest 2-3 hypothetical weekly job updates or generic titles they should target this week based on their level, and identify missing keywords they should add to their resume.
+
+CRITICAL INSTRUCTION: You MUST return your analysis as a PURE VALID JSON object. No markdown wrapping, no conversational text. Include nothing but the JSON object.
+
+Output JSON Format strictly:
+{
+  "skillGaps": [
+    { "skill": "String format of the skill", "currentLevel": 40, "targetLevel": 90 } // Levels between 0-100
+  ],
+  "missingKeywords": ["keyword1", "keyword2", "keyword3"],
+  "recommendations": [
+    { "title": "Actionable goal", "description": "Detailed strategic advice." }
+  ],
+  "jobUpdates": [
+    { "title": "Job Title to target", "company": "Type of company/industry", "description": "Why this matches their profile." }
+  ]
+}`;
+
+            const userPrompt = `Please analyze the following profile:\n\nResume/Bio:\n${resumeText}\n\nLinkedIn URL: ${linkedinUrl}\nGitHub URL: ${githubUrl}`;
+
+            const requestBody = {
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: [{
+                    parts: [{ text: userPrompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    maxOutputTokens: 2500,
+                    responseMimeType: "application/json"
+                }
+            };
+
+            // Setup fetch endpoint (Using cors proxy to avoid browser restrictions if checked)
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const endpoint = useProxy ? proxyUrl + baseUrl : baseUrl;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorStatus = await response.text();
+                    throw new Error(`API Error ${response.status}: ${errorStatus}`);
+                }
+
+                const data = await response.json();
+                const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                
+                console.log("Raw LLM Reply:", rawContent);
+                
+                // Parse the JSON strictly. If Gemini wrapped in ```json, extract it.
+                let jsonString = rawContent;
+                if (jsonString.includes('```json')) {
+                    jsonString = jsonString.split('```json')[1].split('```')[0].trim();
+                } else if (jsonString.includes('```')) {
+                    jsonString = jsonString.split('```')[1].split('```')[0].trim();
+                }
+
+                const parsedData = JSON.parse(jsonString);
+                renderResults(parsedData);
+
+            } catch (err) {
+                console.error(err);
+                errorView.innerHTML = `<strong>Analysis Failed:</strong> ${err.message}<br><br><small>Note: If hitting CORS issues, ensure 'Use CORS Proxy' is checked. If using 'cors-anywhere', you may need to visit their <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" style="color:var(--secondary)">demo page</a> to temporarily authorize access.</small>`;
+                errorView.style.display = 'block';
+                document.getElementById('emptyState').style.display = 'flex';
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        });
+
+        function renderResults(data) {
+            // Document references
+            const container = document.getElementById('resultsContainer');
+            const skillList = document.getElementById('skillList');
+            const keywordsList = document.getElementById('keywordsList');
+            const recommendationsList = document.getElementById('recommendationsList');
+            const jobsList = document.getElementById('jobsList');
+
+            // Clear previous contents
+            skillList.innerHTML = '';
+            keywordsList.innerHTML = '';
+            recommendationsList.innerHTML = '';
+            jobsList.innerHTML = '';
+
+            // 1. Render Skills
+            if (data.skillGaps && data.skillGaps.length > 0) {
+                data.skillGaps.forEach(gap => {
+                    // Safe values
+                    const curr = Math.min(100, Math.max(0, gap.currentLevel || 0));
+                    const tgt = Math.min(100, Math.max(0, gap.targetLevel || 100));
+
+                    const html = `
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span><strong>${gap.skill}</strong> - Current: ${curr}%</span>
+                                <span style="color: var(--primary);">Target: ${tgt}%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: 0%;" data-target="${curr}"></div>
+                                <!-- Overlap dot or indicator for target -->
+                                <div style="position: absolute; height: 14px; width: 4px; background: white; top: -2px; left: ${tgt}%; border-radius: 2px; box-shadow: 0 0 5px rgba(255,255,255,0.8);"></div>
+                            </div>
+                        </div>
+                    `;
+                    skillList.insertAdjacentHTML('beforeend', html);
+                });
+            } else {
+                skillList.innerHTML = "<p>No skill gaps identified.</p>";
+            }
+
+            // 2. Render Keywords
+            if (data.missingKeywords && data.missingKeywords.length > 0) {
+                data.missingKeywords.forEach(kw => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.textContent = kw;
+                    keywordsList.appendChild(tag);
+                });
+            } else {
+                keywordsList.innerHTML = "<p>No missing keywords identified.</p>";
+            }
+
+            // 3. Render Recommendations
+            if (data.recommendations && data.recommendations.length > 0) {
+                data.recommendations.forEach((rec, idx) => {
+                    const html = `
+                        <div class="info-card">
+                            <div class="info-card-subtitle">Priority ${idx + 1}</div>
+                            <h4>${rec.title}</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">${rec.description}</p>
+                        </div>
+                    `;
+                    recommendationsList.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // 4. Render Jobs
+            if (data.jobUpdates && data.jobUpdates.length > 0) {
+                data.jobUpdates.forEach(job => {
+                    const html = `
+                        <div class="info-card" style="border-color: rgba(147, 51, 234, 0.3);">
+                            <div class="info-card-subtitle">${job.company}</div>
+                            <h4>${job.title}</h4>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">${job.description}</p>
+                        </div>
+                    `;
+                    jobsList.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // Show container
+            container.style.display = 'flex';
+
+            // Trigger Progress Bar Animations
+            setTimeout(() => {
+                document.querySelectorAll('.progress-fill').forEach(bar => {
+                    bar.style.width = bar.getAttribute('data-target') + '%';
+                });
+            }, 100);
+        }
+    </script>
+</body>
+</html>
